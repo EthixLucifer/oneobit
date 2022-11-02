@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from "react";
-
 import { Container, Button, Input, Spacer, Text } from '@nextui-org/react';
 import { ethers } from "ethers";
 import Web3Modal from "web3modal";
-import { simpleCrypto, codeValueStorage } from "./encryption";
 import OneOBit from "../components/ABI/OneOBit.json";
-const contractAddress = "0x4Af1fA82FFCfA99940cf203A7d4e1f022B61661E";
+const contractAddress = "0xeE47F4743f5ae3E23bdDDBa934db5B01661fE368";
 import detectEthereumProvider from "@metamask/detect-provider";
-
+import codevalues from "./codevalues.json"
 
 export default function Front() {
 
   const [userAddress, setuserAddress] = useState("");
-  
 
-//sets code value given by the user and is used in claimNFTs function to validate code values 
+  //sets code value given by the user and is used in claimNFTs function to validate code values 
   const [codeValue, setcodeValue] = useState('');
 
   async function connectUser() {
@@ -23,8 +20,6 @@ export default function Front() {
         const web3modal = new Web3Modal();
         const connection = await web3modal.connect();
         const provider = new ethers.providers.Web3Provider(connection);
-        const signer = provider.getSigner();
-
         const account = await provider.listAccounts();
         setuserAddress(account)
         console.log(account);
@@ -91,48 +86,44 @@ export default function Front() {
 
   async function claimNFTs() {
 
+    console.log(`Value entered by the USER  ${codeValue} <<`);
 
-    console.log(`code value codeValueStorage ${codeValueStorage} <<`);
-    console.log(`code value front codeValueStorage ${codeValue} <<`);
 
     try {
 
       //checks and validates the code value given by the user with our js backend file, if correct code value is given, it mints tokens for user address
 
-      for (let i = 0; i < codeValueStorage.length; ++i) {
-        console.log("Loop count", i);
-        console.log("Length code value storage ", (codeValueStorage.length));
-        console.log("Input code value", simpleCrypto.decrypt(codeValue));
-        console.log("Array code value", simpleCrypto.decrypt(codeValueStorage[i]));
 
-        if (simpleCrypto.decrypt(codeValue) === simpleCrypto.decrypt(codeValueStorage[i])) {
-          setGoerChain();
-          const web3modal = new Web3Modal();
-          const connection = await web3modal.connect();
-          const provider = new ethers.providers.Web3Provider(connection);
-          const signer = provider.getSigner();
+      if (codevalues[codeValue] == undefined || NaN) {
+        console.log("The CodeValue is Either undefined or Nan");
+      }
 
-          //contract instance
-          const OneOBitAssignmentContract = new ethers.Contract(contractAddress, OneOBit, signer);
-          // let mintingFees = await OneOBitAssignmentContract.mintingFees();
-          // let mintTransaction = await OneOBitAssignmentContract.claim(userAddress, simpleCrypto.decrypt(codeValueStorage[i]), value:mintingFees);
+      else {
 
-          //code value given by user is decrypted and converted into quantity for ERC721A minting
-          let quantity = Number(simpleCrypto.decrypt(codeValue));
-          console.log(`${quantity} are minting`);
-          let NFTMintedTo = await provider.listAccounts();
-          NFTMintedTo = NFTMintedTo.toString();
-          
-          // claiming NFTS with smart contract instance
-          let mintTransaction = await OneOBitAssignmentContract.claim(NFTMintedTo, quantity);
-          mintTransaction = await mintTransaction.wait();
-          console.log(`Claim NFT transaction ${mintTransaction}`);
-          break;
-        }
 
-        else {
-          console.log("Seems like you dont have the encrypted code value!! Sorry :(");
-        }
+        console.log("Token Id at Code Value : ", codevalues[codeValue]);
+        console.log("Input code value", codeValue);
+
+
+        setGoerChain();
+        const web3modal = new Web3Modal();
+        const connection = await web3modal.connect();
+        const provider = new ethers.providers.Web3Provider(connection);
+        const signer = provider.getSigner();
+
+        //contract instance
+        const OneOBitAssignmentContract = new ethers.Contract(contractAddress, OneOBit, signer);
+
+
+        //code value given by user is decrypted and converted into quantity for ERC721A minting
+        console.log(`token Id ${codevalues[codeValue]}  is being claimed`);
+        let NFTMintedTo = await provider.listAccounts();
+        NFTMintedTo = NFTMintedTo.toString();
+
+        // claiming NFTS with smart contract instance
+        let mintTransaction = await OneOBitAssignmentContract.claim(codevalues[codeValue]);
+        mintTransaction = await mintTransaction.wait();
+        console.log(`token Id ${codevalues[codeValue]}  has been claimed`);
       }
     }
 
